@@ -165,6 +165,8 @@ int ast_dsp_get_tstate(struct ast_dsp *dsp);
 /*! \brief Get tcount (Threshold counter) */
 int ast_dsp_get_tcount(struct ast_dsp *dsp);
 
+long ast_dsp_get_atd_freq_ms(const struct ast_dsp *dsp);
+
 /*!
  * \brief Get silence threshold from dsp.conf
  * \since 1.6.1

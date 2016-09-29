@@ -426,6 +426,11 @@ struct ast_dsp {
 	digit_detect_state_t digit_state;
 	tone_detect_state_t cng_tone_state;
 	tone_detect_state_t ced_tone_state;
+	/* arbitrary tone detection */
+	long atd_pzc;
+	long atd_ms;
+	long atd_freq_ms;
+        short last_sample;
 };
 
 static void mute_fragment(struct ast_dsp *dsp, fragment_t *fragment)
@@ -436,6 +441,28 @@ static void mute_fragment(struct ast_dsp *dsp, fragment_t *fragment)
 	}
 
 	dsp->mute_data[dsp->mute_fragments++] = *fragment;
+}
+
+static int __ast_dsp_arbitrary_tone(struct ast_dsp *dsp, short *s, int len)
+{
+	int x;
+	for (x = 0; x < len; x++) {
+		if (s[x] >= 0 && dsp->last_sample < 0) {
+			dsp->atd_pzc++;
+		}
+		dsp->last_sample = s[x];
+	}
+	dsp->atd_ms += (len / (dsp->sample_rate / 1000));
+	if (dsp->atd_pzc) {
+		dsp->atd_freq_ms = (dsp->atd_ms / dsp->atd_pzc);
+	} else {
+		dsp->atd_freq_ms = 0;
+	}
+	if (dsp->atd_ms > 1000) {
+		dsp->atd_ms /= 2;
+		dsp->atd_pzc /= 2;
+	}
+	return 0;
 }
 
 static void ast_tone_detect_init(tone_detect_state_t *s, int freq, int duration, int amp, unsigned int sample_rate)
@@ -1523,6 +1550,10 @@ struct ast_frame *ast_dsp_process(struct ast_channel *chan, struct ast_dsp *dsp,
 		res = __ast_dsp_silence_noise(dsp, shortdata, len, &silence, NULL, NULL);
 	}
 
+        if (!silence) {
+		res = __ast_dsp_arbitrary_tone(dsp, shortdata, len);
+	}
+
 	if ((dsp->features & DSP_FEATURE_SILENCE_SUPPRESS) && silence) {
 		memset(&dsp->f, 0, sizeof(dsp->f));
 		dsp->f.frametype = AST_FRAME_NULL;
@@ -1662,6 +1693,14 @@ done:
 	}
 }
 
+static void ast_dsp_atd_init(struct ast_dsp *dsp)
+{
+	dsp->atd_pzc = 0;
+	dsp->atd_ms = 0;
+	dsp->atd_freq_ms = 0;
+	dsp->last_sample = 0;
+}
+
 static void ast_dsp_prog_reset(struct ast_dsp *dsp)
 {
 	int max = 0;
@@ -1677,6 +1716,11 @@ static void ast_dsp_prog_reset(struct ast_dsp *dsp)
 	}
 	dsp->freqcount = max;
 	dsp->ringtimeout = 0;
+}
+
+long ast_dsp_get_atd_freq_ms(const struct ast_dsp *dsp)
+{
+	return dsp->atd_freq_ms;
 }
 
 unsigned int ast_dsp_get_sample_rate(const struct ast_dsp *dsp)
@@ -1703,6 +1747,8 @@ static struct ast_dsp *__ast_dsp_new(unsigned int sample_rate)
 		ast_dsp_prog_reset(dsp);
 		/* Initialize fax detector */
 		ast_fax_detect_init(dsp);
+		/* Initialize arbitrary tone detector */
+		ast_dsp_atd_init(dsp);
 	}
 	return dsp;
 }

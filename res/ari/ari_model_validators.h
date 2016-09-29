@@ -953,6 +953,42 @@ int ast_ari_validate_channel_talking_started(struct ast_json *json);
 ari_validator ast_ari_validate_channel_talking_started_fn(void);
 
 /*!
+ * \brief Validator for ChannelToneFinished.
+ *
+ * Tone is no longer detected on the channel.
+ *
+ * \param json JSON object to validate.
+ * \returns True (non-zero) if valid.
+ * \returns False (zero) if invalid.
+ */
+int ast_ari_validate_channel_tone_finished(struct ast_json *json);
+
+/*!
+ * \brief Function pointer to ast_ari_validate_channel_tone_finished().
+ *
+ * See \ref ast_ari_model_validators.h for more details.
+ */
+ari_validator ast_ari_validate_channel_tone_finished_fn(void);
+
+/*!
+ * \brief Validator for ChannelToneStarted.
+ *
+ * Tone was detected on the channel.
+ *
+ * \param json JSON object to validate.
+ * \returns True (non-zero) if valid.
+ * \returns False (zero) if invalid.
+ */
+int ast_ari_validate_channel_tone_started(struct ast_json *json);
+
+/*!
+ * \brief Function pointer to ast_ari_validate_channel_tone_started().
+ *
+ * See \ref ast_ari_model_validators.h for more details.
+ */
+ari_validator ast_ari_validate_channel_tone_started_fn(void);
+
+/*!
  * \brief Validator for ChannelUnhold.
  *
  * A channel initiated a media unhold.
@@ -1593,6 +1629,17 @@ ari_validator ast_ari_validate_application_fn(void);
  * - channel: Channel (required)
  * - duration: int (required)
  * ChannelTalkingStarted
+ * - type: string (required)
+ * - application: string (required)
+ * - timestamp: Date
+ * - channel: Channel (required)
+ * ChannelToneFinished
+ * - type: string (required)
+ * - application: string (required)
+ * - timestamp: Date
+ * - channel: Channel (required)
+ * - frequency: int (required)
+ * ChannelToneStarted
  * - type: string (required)
  * - application: string (required)
  * - timestamp: Date

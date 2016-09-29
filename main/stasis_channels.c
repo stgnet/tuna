@@ -115,6 +115,34 @@ ASTERISK_FILE_VERSION(__FILE__, "$Revision$")
 			</see-also>
 		</managerEventInstance>
 	</managerEvent>
+	<managerEvent language="en_US" name="ChannelToneStart">
+		<managerEventInstance class="EVENT_FLAG_CLASS">
+			<synopsis>Raised when tone is detected on a channel.</synopsis>
+			<syntax>
+				<channel_snapshot/>
+			</syntax>
+			<see-also>
+				<ref type="function">TALK_DETECT</ref>
+				<ref type="managerEvent">ChannelToneStop</ref>
+			</see-also>
+		</managerEventInstance>
+	</managerEvent>
+	<managerEvent language="en_US" name="ChannelToneStop">
+		<managerEventInstance class="EVENT_FLAG_CLASS">
+			<synopsis>Raised when tone is no longer detected on a channel.</synopsis>
+			<syntax>
+				<channel_snapshot/>
+				<parameter name="Duration">
+					<para>The length in time, in milliseconds, that tone was
+					detected on the channel.</para>
+				</parameter>
+			</syntax>
+			<see-also>
+				<ref type="function">TALK_DETECT</ref>
+				<ref type="managerEvent">ChannelToneStart</ref>
+			</see-also>
+		</managerEventInstance>
+	</managerEvent>
 ***/
 
 #define NUM_MULTI_CHANNEL_BLOB_BUCKETS 7
@@ -1157,6 +1185,58 @@ static struct ast_json *talking_stop_to_json(struct stasis_message *message,
 	return channel_blob_to_json(message, "ChannelTalkingFinished", sanitize);
 }
 
+static struct ast_manager_event_blob *tone_start_to_ami(struct stasis_message *msg)
+{
+	struct ast_str *channel_string;
+	struct ast_channel_blob *obj = stasis_message_data(msg);
+	struct ast_manager_event_blob *blob;
+
+	channel_string = ast_manager_build_channel_state_string(obj->snapshot);
+	if (!channel_string) {
+		return NULL;
+	}
+
+	blob = ast_manager_event_blob_create(EVENT_FLAG_CALL, "ChannelToneStart",
+	                                     "%s", ast_str_buffer(channel_string));
+	ast_free(channel_string);
+
+	return blob;
+}
+
+static struct ast_json *tone_start_to_json(struct stasis_message *message,
+	const struct stasis_message_sanitizer *sanitize)
+{
+	return channel_blob_to_json(message, "ChannelToneStarted", sanitize);
+}
+
+static struct ast_manager_event_blob *tone_stop_to_ami(struct stasis_message *msg)
+{
+	struct ast_str *channel_string;
+	struct ast_channel_blob *obj = stasis_message_data(msg);
+	int duration = ast_json_integer_get(ast_json_object_get(obj->blob, "duration"));
+	struct ast_manager_event_blob *blob;
+
+	channel_string = ast_manager_build_channel_state_string(obj->snapshot);
+	if (!channel_string) {
+		return NULL;
+	}
+
+	blob = ast_manager_event_blob_create(EVENT_FLAG_CALL, "ChannelToneStop",
+	                                     "%s"
+	                                     "Duration: %d\r\n",
+	                                     ast_str_buffer(channel_string),
+	                                     duration);
+	ast_free(channel_string);
+
+	return blob;
+}
+
+static struct ast_json *tone_stop_to_json(struct stasis_message *message,
+	const struct stasis_message_sanitizer *sanitize)
+{
+	return channel_blob_to_json(message, "ChannelToneFinished", sanitize);
+}
+
 static struct ast_json *hold_to_json(struct stasis_message *message,
 	const struct stasis_message_sanitizer *sanitize)
 {
@@ -1244,6 +1324,14 @@ STASIS_MESSAGE_TYPE_DEFN(ast_channel_talking_stop,
 	.to_ami = talking_stop_to_ami,
 	.to_json = talking_stop_to_json,
 	);
+STASIS_MESSAGE_TYPE_DEFN(ast_channel_tone_start,
+	.to_ami = tone_start_to_ami,
+	.to_json = tone_start_to_json,
+	);
+STASIS_MESSAGE_TYPE_DEFN(ast_channel_tone_stop,
+	.to_ami = tone_stop_to_ami,
+	.to_json = tone_stop_to_json,
+	);
 
 /*! @} */
 
@@ -1276,6 +1364,8 @@ static void stasis_channels_cleanup(void)
 	STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_agent_logoff_type);
 	STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_talking_start);
 	STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_talking_stop);
+	STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_tone_start);
+	STASIS_MESSAGE_TYPE_CLEANUP(ast_channel_tone_stop);
 }
 
 int ast_stasis_channels_init(void)
@@ -1324,6 +1414,8 @@ int ast_stasis_channels_init(void)
 	res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_monitor_stop_type);
 	res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_talking_start);
 	res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_talking_stop);
+	res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_tone_start);
+	res |= STASIS_MESSAGE_TYPE_INIT(ast_channel_tone_stop);
 
 	return res;
 }

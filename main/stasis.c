@@ -135,6 +135,8 @@ ASTERISK_FILE_VERSION(__FILE__, "$Revision$");
 							<enum name="ast_channel_agent_logoff_type" />
 							<enum name="ast_channel_talking_start" />
 							<enum name="ast_channel_talking_stop" />
+							<enum name="ast_channel_tone_start" />
+							<enum name="ast_channel_tone_stop" />
 							<enum name="ast_security_event_type" />
 							<enum name="ast_named_acl_change_type" />
 							<enum name="ast_local_bridge_type" />

@@ -169,6 +169,8 @@
 				"ChannelVarset",
 				"ChannelTalkingStarted",
 				"ChannelTalkingFinished",
+				"ChannelToneStarted",
+				"ChannelToneFinished",
 				"ChannelHold",
 				"ChannelUnhold",
 				"ContactStatusChange",
@@ -728,6 +730,33 @@
 					"required": true,
 					"type": "int",
 					"description": "The length of time, in milliseconds, that talking was detected on the channel"
+				}
+			}
+		},
+		"ChannelToneStarted": {
+			"id": "ChannelToneStarted",
+			"description": "Tone was detected on the channel.",
+			"properties": {
+				"channel": {
+					"required": true,
+					"type": "Channel",
+					"description": "The channel on which talking started."
+				}
+			}
+		},
+		"ChannelToneFinished": {
+			"id": "ChannelToneFinished",
+			"description": "Tone is no longer detected on the channel.",
+			"properties": {
+				"channel": {
+					"required": true,
+					"type": "Channel",
+					"description": "The channel on which talking completed."
+				},
+				"frequency": {
+					"required": true,
+					"type": "int",
+					"description": "The frequency detected on the channel"
 				}
 			}
 		},
